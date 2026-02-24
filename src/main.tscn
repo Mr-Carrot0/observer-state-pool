@@ -1,0 +1,89 @@
+[gd_scene load_steps=12 format=3 uid="uid://d4l7pf7cswd3r"]
+
+[ext_resource type="Script" uid="uid://rg2ee3uckgjw" path="res://src/scripts/Main.cs" id="1_5q4o7"]
+[ext_resource type="PackedScene" uid="uid://b2pxf0lrkttc3" path="res://src/prefabs/player.tscn" id="1_eewff"]
+[ext_resource type="PackedScene" uid="uid://b7dmrlswjwl43" path="res://src/prefabs/enemy.tscn" id="2_gh0ne"]
+[ext_resource type="Texture2D" uid="uid://1dohtdwaljny" path="res://src/prefabs/grid.png" id="3_3cfgd"]
+[ext_resource type="Script" uid="uid://08iwq2c2dabu" path="res://src/scripts/PlayerUI.cs" id="5_fyndt"]
+[ext_resource type="PackedScene" uid="uid://dtuu08cm62c43" path="res://src/prefabs/hurt_gpu_particles.tscn" id="6_kmhfv"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0xm2m"]
+size = Vector3(43.20508, 1, 47.71875)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig7tw"]
+albedo_color = Color(0.5513022, 0.5538321, 0.8676869, 1)
+albedo_texture = ExtResource("3_3cfgd")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_world_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_ig7tw"]
+lightmap_size_hint = Vector2i(458, 254)
+material = SubResource("StandardMaterial3D_ig7tw")
+size = Vector3(43.20508, 1, 47.71875)
+
+[sub_resource type="Environment" id="Environment_ig7tw"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k217c"]
+bg_color = Color(1, 0, 0, 1)
+
+[node name="main" type="Node3D"]
+script = ExtResource("1_5q4o7")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.89485645, 1.9510754e-08, -0.446354, 0.446354, -3.9115417e-08, 0.89485645, 0, -1, -4.371139e-08, -12.169829, 24.673244, 0)
+
+[node name="Player" parent="." node_paths=PackedStringArray("Cam") instance=ExtResource("1_eewff")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7253525, 0)
+Cam = NodePath("Camera3D")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 0.87665963, 0.4811112, 0, -0.4811112, 0.87665963, 0, 2.2097385, 5.616309)
+
+[node name="Ground" type="StaticBody3D" parent="."]
+metadata/_edit_lock_ = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_0xm2m")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.027228832, 0, -0.0048513412)
+mesh = SubResource("BoxMesh_ig7tw")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_ig7tw")
+
+[node name="enemies" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.281482, 0.81613445, -6.794547)
+
+[node name="Enemy" parent="enemies" node_paths=PackedStringArray("player") instance=ExtResource("2_gh0ne")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8970976, 0.49389505, 6.4847307)
+player = NodePath("../../Player")
+
+[node name="UI" type="Control" parent="." node_paths=PackedStringArray("player", "HealthBar", "Cam")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_fyndt")
+player = NodePath("../Player")
+HealthBar = NodePath("HealthBar")
+Cam = NodePath("../Player/Camera3D")
+
+[node name="HealthBar" type="ProgressBar" parent="UI"]
+custom_minimum_size = Vector2(50, 20)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.112847224
+anchor_bottom = 0.030864198
+grow_horizontal = 2
+grow_vertical = 2
+tooltip_text = "HeathBar"
+theme_override_styles/fill = SubResource("StyleBoxFlat_k217c")
+value = 100.0
+show_percentage = false
+metadata/_edit_use_anchors_ = true
+
+[node name="HurtParticlesGPU" parent="." instance=ExtResource("6_kmhfv")]

@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://dtuu08cm62c43"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_iepqp"]
+angle_min = -0.9999893
+angle_max = 1.0000107
+direction = Vector3(0, 1, 0)
+initial_velocity_min = 4.0
+initial_velocity_max = 6.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2bf68"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_no2pr"]
+material = SubResource("StandardMaterial3D_2bf68")
+radius = 0.1
+height = 0.2
+rings = 412
+
+[node name="HurtParticlesGPU" type="GPUParticles3D"]
+emitting = false
+process_material = SubResource("ParticleProcessMaterial_iepqp")
+draw_pass_1 = SubResource("SphereMesh_no2pr")

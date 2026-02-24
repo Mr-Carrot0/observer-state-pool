@@ -5,6 +5,7 @@ public enum EventType
 {
     GENERIC,
     P_HURT,
+    P_HIT,
 }
 
 public class EventData(EventType type, Variant? value = null)

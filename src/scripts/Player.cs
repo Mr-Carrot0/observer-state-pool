@@ -11,13 +11,17 @@ public partial class Player : CharacterBody3D
     public float Health = MAX_HEALTH;
     // [Export] public ProgressBar HealthBar;
     [Export] private Camera3D Cam;
-    Enemy _ref;
-    float _Timer = 0;
+    // Enemy _ref;
+    // float _Timer = 0;
 
     public event GameAction GameActions;
-    public void StartAction(EventData data)
+    public void BroadcastAction(EventData data)
     {
         GameActions?.Invoke(data);
+    }
+    public void BroadcastAction(EventType _type, Variant? value = null)
+    {
+        GameActions?.Invoke(new EventData(_type, value));
     }
 
     public override void _PhysicsProcess(double delta)
@@ -70,14 +74,15 @@ public partial class Player : CharacterBody3D
 
                 if (Vector3.Up.Dot(collision.GetNormal()) > 0.1f)
                 {
-                    _ref = mob;
-                    mob.Squash();
+                    // _ref = mob;
+                    BroadcastAction(EventType.P_HIT);
+                    // mob.Squash();
                     GD.Print("squash");
                 }
                 else
                 {
                     Health--;
-                    StartAction(new EventData(EventType.P_HURT));
+                    BroadcastAction(EventType.P_HURT);
                     // GD.PrintS("hit", Health);
 
                     // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
@@ -89,17 +94,17 @@ public partial class Player : CharacterBody3D
         MoveAndSlide();
 
 
-        if (_ref != null)
-        {
-            _Timer += (float)delta;
-            if (_Timer > 2f)
-            {
-                // float r = GD.Randf();
-                // GD.PrintS(r, r * Mathf.Tau, Vector3.Right.Rotated(Vector3.Up, r * Mathf.Tau));
-                _ref.ReviveAt(GlobalPosition + 5 * Vector3.Right.Rotated(Vector3.Up, GD.Randf() * Mathf.Tau));
-                _Timer = 0;
-                _ref = null;
-            }
-        }
+        // if (_ref != null)
+        // {
+        //     _Timer += (float)delta;
+        //     if (_Timer > 2f)
+        //     {
+        //         // float r = GD.Randf();
+        //         // GD.PrintS(r, r * Mathf.Tau, Vector3.Right.Rotated(Vector3.Up, r * Mathf.Tau));
+        //         _ref.Revive(GlobalPosition + 5 * Vector3.Right.Rotated(Vector3.Up, GD.Randf() * Mathf.Tau));
+        //         _Timer = 0;
+        //         _ref = null;
+        //     }
+        // }
     }
 }

@@ -7,9 +7,6 @@
 [ext_resource type="Script" uid="uid://08iwq2c2dabu" path="res://src/scripts/PlayerUI.cs" id="5_fyndt"]
 [ext_resource type="PackedScene" uid="uid://dtuu08cm62c43" path="res://src/prefabs/hurt_gpu_particles.tscn" id="6_kmhfv"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_0xm2m"]
-size = Vector3(43.20508, 1, 47.71875)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ig7tw"]
 albedo_color = Color(0.5513022, 0.5538321, 0.8676869, 1)
 albedo_texture = ExtResource("3_3cfgd")
@@ -20,6 +17,9 @@ uv1_world_triplanar = true
 [sub_resource type="BoxMesh" id="BoxMesh_ig7tw"]
 lightmap_size_hint = Vector2i(458, 254)
 material = SubResource("StandardMaterial3D_ig7tw")
+size = Vector3(43.20508, 1, 47.71875)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0xm2m"]
 size = Vector3(43.20508, 1, 47.71875)
 
 [sub_resource type="Environment" id="Environment_ig7tw"]
@@ -43,12 +43,11 @@ transform = Transform3D(1, 0, 0, 0, 0.87665963, 0.4811112, 0, -0.4811112, 0.8766
 [node name="Ground" type="StaticBody3D" parent="."]
 metadata/_edit_lock_ = true
 
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("BoxMesh_ig7tw")
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("BoxShape3D_0xm2m")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.027228832, 0, -0.0048513412)
-mesh = SubResource("BoxMesh_ig7tw")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_ig7tw")

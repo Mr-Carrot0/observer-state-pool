@@ -4,11 +4,11 @@ using System;
 
 public partial class Player : CharacterBody3D
 {
-    public delegate void GameAction(EventData data);
+    // public delegate void GameAction(EventData data);
     public const float MAX_SPEED = 5.0f;
     public const float JUMP_VELOCITY = 4.5f;
-    public const float MAX_HEALTH = 5;
-    public float Health = MAX_HEALTH;
+    public const int MAX_HEALTH = 3;
+    public int Health = MAX_HEALTH;
     // [Export] public ProgressBar HealthBar;
     [Export] private Camera3D Cam;
     // Enemy _ref;
@@ -22,6 +22,13 @@ public partial class Player : CharacterBody3D
     public void BroadcastAction(EventType _type, Variant? value = null)
     {
         GameActions?.Invoke(new EventData(_type, value));
+        // GameActions(data:new(_type));
+    }
+
+    public void OnHit(CharacterBody3D attacker = null, int dmg = 1)
+    {
+        Health -= dmg;
+        BroadcastAction(EventType.P_HURT, attacker);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -31,6 +38,7 @@ public partial class Player : CharacterBody3D
         if (IsOnFloor() && Input.IsActionJustPressed("jump"))
         {
             velocity.Y = JUMP_VELOCITY;
+            BroadcastAction(EventType.JUMP);
         }
         else
         {
@@ -69,42 +77,29 @@ public partial class Player : CharacterBody3D
 
             if (collision.GetCollider() is Enemy mob)
             {
-                if (mob.CurrentState == Enemy.State.DEAD)
+                if (mob.CurrentState == Enemy.State.DISABLED)
                     continue;
 
                 if (Vector3.Up.Dot(collision.GetNormal()) > 0.1f)
                 {
                     // _ref = mob;
-                    BroadcastAction(EventType.P_HIT);
+                    BroadcastAction(EventType.P_HIT, mob);
                     // mob.Squash();
                     GD.Print("squash");
                 }
-                else
-                {
-                    Health--;
-                    BroadcastAction(EventType.P_HURT);
-                    // GD.PrintS("hit", Health);
+                // else // always activated by Enemy
+                // {
+                //     // OnHit(mob);
+                //     // Health--;
+                //     // BroadcastAction(EventType.P_HURT, mob);
+                //     // GD.PrintS("hit", Health);
 
-                    // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
-                }
+                //     // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
+                // }
 
-                break;
+                // break;
             }
         }
         MoveAndSlide();
-
-
-        // if (_ref != null)
-        // {
-        //     _Timer += (float)delta;
-        //     if (_Timer > 2f)
-        //     {
-        //         // float r = GD.Randf();
-        //         // GD.PrintS(r, r * Mathf.Tau, Vector3.Right.Rotated(Vector3.Up, r * Mathf.Tau));
-        //         _ref.Revive(GlobalPosition + 5 * Vector3.Right.Rotated(Vector3.Up, GD.Randf() * Mathf.Tau));
-        //         _Timer = 0;
-        //         _ref = null;
-        //     }
-        // }
     }
 }

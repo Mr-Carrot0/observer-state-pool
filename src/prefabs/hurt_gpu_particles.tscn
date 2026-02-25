@@ -3,9 +3,11 @@
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_iepqp"]
 angle_min = -0.9999893
 angle_max = 1.0000107
+velocity_pivot = Vector3(0, 1, 0)
 direction = Vector3(0, 1, 0)
+spread = 20.0
 initial_velocity_min = 4.0
-initial_velocity_max = 6.0
+initial_velocity_max = 5.0
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2bf68"]
 albedo_color = Color(1, 0, 0, 1)
@@ -18,5 +20,7 @@ rings = 412
 
 [node name="HurtParticlesGPU" type="GPUParticles3D"]
 emitting = false
+one_shot = true
+explosiveness = 0.72
 process_material = SubResource("ParticleProcessMaterial_iepqp")
 draw_pass_1 = SubResource("SphereMesh_no2pr")

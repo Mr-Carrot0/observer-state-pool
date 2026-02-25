@@ -85,4 +85,7 @@ value = 100.0
 show_percentage = false
 metadata/_edit_use_anchors_ = true
 
-[node name="HurtParticlesGPU" parent="." instance=ExtResource("6_kmhfv")]
+[node name="ParticleSystem" type="Node3D" parent="."]
+
+[node name="HurtParticlesGPU" parent="ParticleSystem" instance=ExtResource("6_kmhfv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47216058, 0)

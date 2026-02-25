@@ -10,9 +10,8 @@ albedo_color = Color(0.12156863, 1, 0.57254905, 1)
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_i3pqv"]
 material = SubResource("StandardMaterial3D_4flbx")
 
-[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("HealthBar")]
+[node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_4flbx")
-HealthBar = NodePath("")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_onrkg")

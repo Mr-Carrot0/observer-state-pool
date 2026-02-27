@@ -1,7 +1,6 @@
 using Godot;
 // using Godot.Collections;
 using System;
-using System.Collections.Generic;
 using StateFunc = System.Action<Enemy, float>;
 
 public partial class Enemy : CharacterBody3D
@@ -13,16 +12,24 @@ public partial class Enemy : CharacterBody3D
     // public enum State { IDLE, CHASING, DEAD, WAITING }
 
     float MyTimer = 0;
-    [Export] float JumpHieght = 0.3f;
-    [Export] float JumpFreq = 5f;
-    [Export] float rangeSqrd = 14f;
-    [Export] float Speed = 2f;
-    [Export] MeshInstance3D Mesh;
-    [Export] Player player;
     public Vector3 Direction = Vector3.Zero;
-    // ("#555")
+    const float LookRadiusSqrd = 14f;
+
+    // [ExportGroup("Physics")]
+    const float JumpHieght = 0.3f;
+    const float JumpFreq = 5f;
+    const float Speed = 2f;
+
+    [ExportGroup("Nodes")]
+    [Export] Player player;
+    [ExportSubgroup("Internal Nodes")]
+    [Export] MeshInstance3D Mesh;
+
+    [ExportGroup("Customization")]
     [Export] Color ColorDeath = Colors.Gray;
     [Export] Color ColorAlive = Colors.DarkOrange;
+    // [Export] Area3D Hurtbox;
+    // ("#555")
 
     // public State CurrentState = State.IDLE;
     // public MState CStateTMP;
@@ -57,6 +64,8 @@ public partial class Enemy : CharacterBody3D
     }
     public override void _Ready()
     {
+        // AttackRadius = Mesh.Mesh
+
         player.GameActions += delegate (EventData data)
         {
             if ((GodotObject)data?.Value == this)
@@ -93,24 +102,25 @@ public partial class Enemy : CharacterBody3D
     //         default: return "unkown";
     //     }
     // }
-    private static void Hop(Enemy mob, float JumpFreq, float delta)
+    private void Hop(float delta, float _JumpFreq = JumpFreq)
     {
-        mob.Position = _FlattenVec3(mob.Position);
+        Position = _FlattenVec3(Position);
         // mob.Mesh.Position = new(0
         // , Mathf.Lerp(mob.Mesh.Position.Y, mob.JumpHieght * 0.9f * Mathf.Abs(Mathf.Sin(JumpFreq * mob.MyTimer)), 0.1f)
         // , 0);
-        mob.Mesh.Position = new(0, mob.JumpHieght * Mathf.Abs(Mathf.Sin(JumpFreq * mob.MyTimer)), 0);
+        Mesh.Position = new(0, JumpHieght * Mathf.Abs(Mathf.Sin(_JumpFreq * MyTimer)), 0);
         // mob.Mesh.Position.Y = mob.JumpHieght * Mathf.Abs(Mathf.Sin(JumpFreq * mob.MyTimer)
-        mob.MyTimer += delta;
-        mob.MyTimer %= Mathf.Pi / JumpFreq;
+        MyTimer += delta;
+        MyTimer %= Mathf.Pi / _JumpFreq;
     }
 
-    public static bool IsPlayerInRange(Enemy mob)
+    public bool IsPlayerInRange()
     {
+        // float _rangeSqrd = attack ? AttackRadiusSqrd : LookRadiusSqrd;
         // GD.PrintT(mob.GlobalPosition, mob.player.GlobalPosition);
         // GD.PrintT(mob.GlobalPosition.DistanceSquaredTo(mob.player.GlobalPosition), mob.rangeSqrd);
         // GD.PrintT(mob.GlobalPosition.DistanceSquaredTo(mob.player.GlobalPosition) < mob.rangeSqrd);
-        return mob.GlobalPosition.DistanceSquaredTo(mob.player.GlobalPosition) < mob.rangeSqrd;
+        return GlobalPosition.DistanceSquaredTo(player.GlobalPosition) < LookRadiusSqrd;
     }
 
     public void Squash()
@@ -128,6 +138,98 @@ public partial class Enemy : CharacterBody3D
         MeshColor = ColorAlive;
     }
 
+    public static class State
+    {
+        public static readonly System.Collections.Generic.Dictionary<StateFunc, string> GetNameDebug = new()
+        {
+            {IDLE, "IDLE"},
+            {CHASE, "CHASE"},
+            {DISABLED, "DISABLED"},
+            {WAITING, "WAITING"},
+        };
+        public static void CHASE(Enemy mob, float delta)
+        {
+            if (!mob.IsPlayerInRange())
+            {
+                mob.ChangeState(IDLE, false);
+                return;
+            }
+            // if (mob.IsPlayerInRange(true))
+            // {
+            //     mob.player.OnHit();
+            // }
+            // Move(mob);
+            mob.Direction = _FlattenVec3(mob.GlobalPosition.DirectionTo(mob.player.GlobalPosition)).Normalized();
+            // Velocity
+            // Vector3 velocity = Velocity;
+
+            // GD.Print(GlobalPosition.DistanceSquaredTo(player.GlobalPosition));
+            mob.Velocity = mob.Velocity.MoveToward(mob.Direction * Speed, 0.3f * Speed);
+            // GD.Print(Direction);
+
+            // Velocity = velocity;
+            mob.Hop(delta);
+            mob.MoveAndSlide();
+            int ccount = mob.GetSlideCollisionCount();
+            for (int i = 0; i < ccount; i++)
+            {
+                KinematicCollision3D collision = mob.GetSlideCollision(i);
+
+                // GD.Print(ccount);
+                if (collision.GetCollider() is Player p)
+                {
+                    if (Vector3.Up.Dot(collision.GetNormal()) < 0.1f)
+                    {
+                        p.OnPlayerDamage(mob);
+                    }
+                    // else // always activated by Player
+                    // {
+                    //     mob.Squash();
+                    //     p.BroadcastAction(EventType.P_HIT, mob);
+                    // }
+                }
+            }
+
+            // gets killed -> set to DISABLED/DEAD
+        }
+        public static void IDLE(Enemy mob, float delta)
+        {
+            if (mob.IsPlayerInRange())
+            {
+                mob.ChangeState(CHASE, false);
+                return;
+            }
+            mob.Hop(delta, JumpFreq / 2);
+        }
+        public static void WAITING(Enemy mob, float delta)
+        {
+            mob.MyTimer += delta;
+            if (mob.MyTimer > 2f)
+                mob.ChangeState(IDLE);
+        }
+        public static void DISABLED(Enemy mob, float delta)
+        {
+            if (mob.MyTimer < 0.1f)
+            {
+
+                mob.MyTimer = Mathf.Min(1, mob.MyTimer + (float)delta * 0.1f);
+                mob.Mesh.Position = mob.Mesh.Position.Lerp(Vector3.Zero, mob.MyTimer);
+
+                // Vector3 gPos = G
+                if (mob.GlobalPosition.Y > 0f)
+                    mob.GlobalPosition = new(mob.GlobalPosition.X
+                    , Mathf.Lerp(mob.GlobalPosition.Y, 0f, mob.MyTimer)
+                        , mob.GlobalPosition.Z);
+                // ((StandardMaterial3D)((PrimitiveMesh)Mesh.Mesh).Material).AlbedoColor = Colors.Red;
+                mob.MeshColor = mob.MeshColor.Lerp(mob.ColorDeath, mob.MyTimer * 2);
+            }
+            else
+            {
+                mob.Visible = false;
+                mob.ProcessMode = ProcessModeEnum.Disabled;
+            }
+        }
+    }
     // 
     // static void Move(Enemy mob)
     // {
@@ -142,102 +244,8 @@ public partial class Enemy : CharacterBody3D
     //     // Velocity = velocity;
     //     mob.MoveAndSlide();
     // }
-    public interface IState
-    {
-        public void Update();
-    }
-    public static class State
-    {
-        public static readonly Dictionary<StateFunc, string> GetNameDebug = new()
-        {
-            {IDLE, "IDLE"},
-            {CHASE, "CHASE"},
-            {DISABLED, "DISABLED"},
-            {WAITING, "WAITING"},
-        };
-        public static void IDLE(Enemy mob, float delta)
-        {
-            // GD.PrintS(mob.Position, mob.player.Position, IsPlayerInRange(mob));
-            if (IsPlayerInRange(mob))
-            {
-                mob.ChangeState(CHASE, false);
-                return;
-            }
-            Hop(mob, mob.JumpFreq / 2, delta);
-        }
-        public static void CHASE(Enemy mob, float delta)
-        {
-            // GD.Print("CHASE");
-            if (!IsPlayerInRange(mob))
-            {
-                mob.ChangeState(IDLE, false);
-                return;
-            }
-            // Move(mob);
-            mob.Direction = _FlattenVec3(mob.GlobalPosition.DirectionTo(mob.player.GlobalPosition)).Normalized();
-            // Velocity
-            // Vector3 velocity = Velocity;
-
-            // GD.Print(GlobalPosition.DistanceSquaredTo(player.GlobalPosition));
-            mob.Velocity = mob.Velocity.MoveToward(mob.Direction * mob.Speed, 0.3f * mob.Speed);
-            // GD.Print(Direction);
-
-            // Velocity = velocity;
-            Hop(mob, mob.JumpFreq, delta);
-            mob.MoveAndSlide();
-            int ccount = mob.GetSlideCollisionCount();
-            for (int i = 0; i < ccount; i++)
-            {
-                KinematicCollision3D collision = mob.GetSlideCollision(i);
-
-                // GD.Print(ccount);
-                if (collision.GetCollider() is Player p)
-                {
-                    if (Vector3.Up.Dot(collision.GetNormal()) < 0.1f)
-                    {
-                        p.OnHit(mob);
-                    }
-                    // else // always activated by Player
-                    // {
-                    //     mob.Squash();
-                    //     p.BroadcastAction(EventType.P_HIT, mob);
-                    // }
-                }
-            }
-
-            // gets killed -> set to DISABLED/DEAD
-        }
-        public static void WAITING(Enemy mob, float delta)
-        {
-            // GD.Print("WAIT");
-            mob.MyTimer += delta;
-            if (mob.MyTimer > 2f)
-                mob.ChangeState(IDLE);
-        }
-        public static void DISABLED(Enemy mob, float delta)
-        {
-            // GD.Print("DEAD");
-            if (mob.MyTimer < 0.1f)
-            {
-                // GD.PrintS(SkipTimer, Mesh.Position, (float)delta, (float)delta * 0.1f);
-
-                mob.MyTimer = Mathf.Min(1, mob.MyTimer + (float)delta * 0.1f);
-                mob.Mesh.Position = mob.Mesh.Position.Lerp(Vector3.Zero, mob.MyTimer);
-
-                // Vector3 gPos = G
-                if (mob.GlobalPosition.Y > 0f)
-                    mob.GlobalPosition = new(mob.GlobalPosition.X
-                    , Mathf.Lerp(mob.GlobalPosition.Y, 0f, mob.MyTimer)
-                        , mob.GlobalPosition.Z);
-                // ((StandardMaterial3D)((PrimitiveMesh)Mesh.Mesh).Material).AlbedoColor = Colors.Red;
-                // MeshColor = MeshColor.Lerp(Colors.Red, SkipTimer);
-                mob.MeshColor = mob.MeshColor.Lerp(mob.ColorDeath, mob.MyTimer * 2);
-            }
-            else
-            {
-                mob.Visible = false;
-                mob.ProcessMode = ProcessModeEnum.Disabled;
-            }
-        }
-    }
+    // public interface IState
+    // {
+    //     public void Update();
+    // }
 }

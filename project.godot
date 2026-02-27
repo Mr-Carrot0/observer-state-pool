@@ -21,7 +21,7 @@ shapes/layer_2="Player"
 
 [debug_draw_3d]
 
-settings/addon_root_folder="res://addons/debug_draw_3d"
+settings/updates/check_for_updates=false
 settings/initial_debug_state=false
 
 [dotnet]
@@ -69,6 +69,5 @@ restart={
 
 [layer_names]
 
-3d_physics/layer_1="world"
 3d_physics/layer_2="player"
 3d_physics/layer_3="world"

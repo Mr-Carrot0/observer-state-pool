@@ -2,17 +2,20 @@ using Godot;
 using System;
 
 
-public partial class Player : CharacterBody3D
+public partial class Player : CharacterBody3D, IAnchor
 {
     // public delegate void GameAction(EventData data);
+    // [ExportGroup("Physics")]
     public const float MAX_SPEED = 5.0f;
     public const float JUMP_VELOCITY = 4.5f;
-    public const int MAX_HEALTH = 3;
-    public int Health = MAX_HEALTH;
+    public const ushort MAX_HEALTH = 3;
+    public ushort Health = MAX_HEALTH;
     // [Export] public ProgressBar HealthBar;
+    // [ExportGroup("Nodes")]
     [Export] private Camera3D Cam;
     // Enemy _ref;
     // float _Timer = 0;
+    Vector3 Knockback = Vector3.Zero;
 
     public event GameAction GameActions;
     public void BroadcastAction(EventData data)
@@ -25,14 +28,16 @@ public partial class Player : CharacterBody3D
         // GameActions(data:new(_type));
     }
 
-    public void OnHit(CharacterBody3D attacker = null, int dmg = 1)
+    public void OnPlayerDamage(CharacterBody3D attacker = null, ushort dmg = 1)
     {
         Health -= dmg;
+        GD.Print(Health);
         BroadcastAction(EventType.P_HURT, attacker);
     }
 
     public override void _PhysicsProcess(double delta)
     {
+        GD.Print(Health);
         Vector3 velocity = Velocity;
 
         if (IsOnFloor() && Input.IsActionJustPressed("jump"))
@@ -69,8 +74,9 @@ public partial class Player : CharacterBody3D
         }
 
         Velocity = velocity;
-        // MoveAndSlide();
+        Knockback = Knockback.Lerp(Vector3.Zero, 0.02f);
 
+        MoveAndSlide();
         for (int i = 0; i < GetSlideCollisionCount(); i++)
         {
             KinematicCollision3D collision = GetSlideCollision(i);
@@ -87,19 +93,16 @@ public partial class Player : CharacterBody3D
                     // mob.Squash();
                     GD.Print("squash");
                 }
-                // else // always activated by Enemy
-                // {
-                //     // OnHit(mob);
-                //     // Health--;
-                //     // BroadcastAction(EventType.P_HURT, mob);
-                //     // GD.PrintS("hit", Health);
+                else // always activated by Enemy
+                {
+                    OnPlayerDamage(mob);
+                    // GD.PrintS("hit", Health);
 
-                //     // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
-                // }
+                    // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
+                }
 
-                // break;
+                break;
             }
         }
-        MoveAndSlide();
     }
 }

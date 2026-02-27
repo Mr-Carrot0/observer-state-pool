@@ -3,15 +3,6 @@
 [ext_resource type="Script" uid="uid://ybb4vsysnfkh" path="res://src/scripts/Enemy.cs" id="1_gum6w"]
 [ext_resource type="CylinderMesh" uid="uid://ct2m6lgwyqbo7" path="res://src/prefabs/enemy.tres" id="2_ylbrx"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b2b28"]
-albedo_color = Color(1, 0.54901963, 0, 1)
-
-[sub_resource type="SphereMesh" id="SphereMesh_ylbrx"]
-material = SubResource("StandardMaterial3D_b2b28")
-radius = 0.7
-height = 0.7
-rings = 1
-
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_qi2p4"]
 height = 0.5
 radius = 0.7
@@ -20,18 +11,17 @@ radius = 0.7
 height = 0.3876953
 radius = 0.73
 
-[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("Mesh")]
+[sub_resource type="TorusMesh" id="TorusMesh_ylbrx"]
+inner_radius = 0.126
+outer_radius = 0.638
+
+[sub_resource type="BoxMesh" id="BoxMesh_rkah0"]
+size = Vector3(1.2, 0.2, 1.2)
+
+[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("Mesh", "Spikes")]
 script = ExtResource("1_gum6w")
 Mesh = NodePath("Mesh")
-
-[node name="Mesh" type="MeshInstance3D" parent="."]
-mesh = ExtResource("2_ylbrx")
-skeleton = NodePath("../CollisionShape3D")
-
-[node name="Mesh2" type="MeshInstance3D" parent="."]
-visible = false
-mesh = SubResource("SphereMesh_ylbrx")
-skeleton = NodePath("../CollisionShape3D")
+Spikes = NodePath("Mesh/Spikes")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CylinderShape3D_qi2p4")
@@ -40,3 +30,24 @@ shape = SubResource("CylinderShape3D_qi2p4")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HitBox"]
 shape = SubResource("CylinderShape3D_ylbrx")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_ylbrx")
+skeleton = NodePath("../CollisionShape3D")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13952184, 0)
+mesh = SubResource("TorusMesh_ylbrx")
+skeleton = NodePath("../../CollisionShape3D")
+
+[node name="Spikes" type="Node3D" parent="Mesh"]
+
+[node name="sqr2" type="MeshInstance3D" parent="Mesh/Spikes"]
+transform = Transform3D(0.7071067, 0, 0.7071067, 0, 1, 0, -0.7071067, 0, 0.7071067, 0, -0.016233087, 0)
+mesh = SubResource("BoxMesh_rkah0")
+skeleton = NodePath("../../Mesh2")
+
+[node name="sqr" type="MeshInstance3D" parent="Mesh/Spikes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.016233087, 0)
+mesh = SubResource("BoxMesh_rkah0")
+skeleton = NodePath("../../Mesh2")

@@ -1,108 +1,118 @@
 using Godot;
 using System;
 
-
-public partial class Player : CharacterBody3D, IAnchor
+public partial class Player : CharacterBody3D, IEventHandler
 {
-    // public delegate void GameAction(EventData data);
-    // [ExportGroup("Physics")]
+    public bool Dead = false;
     public const float MAX_SPEED = 5.0f;
     public const float JUMP_VELOCITY = 4.5f;
-    public const ushort MAX_HEALTH = 3;
-    public ushort Health = MAX_HEALTH;
-    // [Export] public ProgressBar HealthBar;
-    // [ExportGroup("Nodes")]
+    public const float MAX_HEALTH = 3;
+    public float Health = MAX_HEALTH;
     [Export] private Camera3D Cam;
-    // Enemy _ref;
-    // float _Timer = 0;
     Vector3 Knockback = Vector3.Zero;
 
-    public event GameAction GameActions;
+    public event GameEvent Event;
+
     public void BroadcastAction(EventData data)
     {
-        GameActions?.Invoke(data);
+        Event?.Invoke(data);
     }
-    public void BroadcastAction(EventType _type, Variant? value = null)
+    public void BroadcastAction(EventType _type, Enemy mob = null)
     {
-        GameActions?.Invoke(new EventData(_type, value));
+        Event?.Invoke(new EventData(_type, mob));
         // GameActions(data:new(_type));
     }
 
-    public void OnPlayerDamage(CharacterBody3D attacker = null, ushort dmg = 1)
+    public void OnPlayerHurt(Enemy attacker = null, float dmg = 1)
     {
+        if (Dead) return;
+
         Health -= dmg;
-        GD.Print(Health);
-        BroadcastAction(EventType.P_HURT, attacker);
+        // GD.Print(Health);
+        if (Health <= 0)
+        {
+            BroadcastAction(EventType.DEATH);
+            Dead = true;
+        }
+        else
+        {
+            BroadcastAction(EventType.HURT, attacker);
+        }
+
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        GD.Print(Health);
-        Vector3 velocity = Velocity;
-
-        if (IsOnFloor() && Input.IsActionJustPressed("jump"))
+        if (Dead)
         {
-            velocity.Y = JUMP_VELOCITY;
-            BroadcastAction(EventType.JUMP);
-        }
-        else
-        {
-            velocity += GetGravity() * (float)delta;
-        }
-
-        // Get the input direction and handle the movement/deceleration.
-        // As good practice, you should replace UI actions with custom gameplay actions.
-        Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
-        Vector2 inputDirJoy = new(Input.GetJoyAxis(0, JoyAxis.LeftX), Input.GetJoyAxis(0, JoyAxis.LeftY));
-        // GD.PrintS(inputDirJoy, inputDirJoy.LengthSquared());
-        if (inputDirJoy.LengthSquared() < 0.003f)
-        {
-            inputDirJoy = Vector2.Zero;
-        }
-        if (inputDir == Vector2.Zero) inputDir = inputDirJoy;
-
-        Vector3 direction = (Cam.Basis * Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
-        if (direction != Vector3.Zero)
-        {
-            velocity.X = Mathf.MoveToward(velocity.X, direction.X * MAX_SPEED, MAX_SPEED * 3 * (float)delta);
-            velocity.Z = Mathf.MoveToward(velocity.Z, direction.Z * MAX_SPEED, MAX_SPEED * 3 * (float)delta);
-        }
-        else
-        {
-            velocity.X = Mathf.MoveToward(Velocity.X, 0, MAX_SPEED * 8 * (float)delta);
-            velocity.Z = Mathf.MoveToward(Velocity.Z, 0, MAX_SPEED * 8 * (float)delta);
-        }
-
-        Velocity = velocity;
-        Knockback = Knockback.Lerp(Vector3.Zero, 0.02f);
-
-        MoveAndSlide();
-        for (int i = 0; i < GetSlideCollisionCount(); i++)
-        {
-            KinematicCollision3D collision = GetSlideCollision(i);
-
-            if (collision.GetCollider() is Enemy mob)
+            if (GlobalPosition.Y < 500)
             {
-                if (mob.CurrentState == Enemy.State.DISABLED)
-                    continue;
+                Position += 2 * Vector3.Up * (float)delta;
+            }
+        }
+        else
+        {
+            Vector3 velocity = Velocity;
+            // Vector3 velocity = Velocity;
 
-                if (Vector3.Up.Dot(collision.GetNormal()) > 0.1f)
+            if (IsOnFloor() && Input.IsActionJustPressed("jump"))
+            {
+                velocity.Y = JUMP_VELOCITY;
+                BroadcastAction(EventType.JUMP);
+            }
+            else
+            {
+                velocity += GetGravity() * (float)delta;
+            }
+
+            Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
+            Vector2 inputDirJoy = new(Input.GetJoyAxis(0, JoyAxis.LeftX), Input.GetJoyAxis(0, JoyAxis.LeftY));
+            if (inputDirJoy.LengthSquared() < 0.003f)
+            {
+                inputDirJoy = Vector2.Zero;
+            }
+            if (inputDir == Vector2.Zero) inputDir = inputDirJoy;
+
+            Vector3 direction = (Cam.Basis * Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
+            if (direction != Vector3.Zero)
+            {
+                velocity.X = Mathf.MoveToward(velocity.X, direction.X * MAX_SPEED, MAX_SPEED * 3 * (float)delta);
+                velocity.Z = Mathf.MoveToward(velocity.Z, direction.Z * MAX_SPEED, MAX_SPEED * 3 * (float)delta);
+            }
+            else
+            {
+                velocity.X = Mathf.MoveToward(Velocity.X, 0, MAX_SPEED * 8 * (float)delta);
+                velocity.Z = Mathf.MoveToward(Velocity.Z, 0, MAX_SPEED * 8 * (float)delta);
+            }
+
+            Velocity = velocity;
+            Knockback = Knockback.Lerp(Vector3.Zero, 0.02f);
+
+            MoveAndSlide();
+            for (int i = 0; i < GetSlideCollisionCount(); i++)
+            {
+                KinematicCollision3D collision = GetSlideCollision(i);
+
+                if (collision.GetCollider() is Enemy mob)
                 {
-                    // _ref = mob;
-                    BroadcastAction(EventType.P_HIT, mob);
-                    // mob.Squash();
-                    GD.Print("squash");
-                }
-                else // always activated by Enemy
-                {
-                    OnPlayerDamage(mob);
-                    // GD.PrintS("hit", Health);
+                    if (mob.CurrentState == Enemy.State.DISABLED)
+                        continue;
 
-                    // Velocity += (mob.Position - Position).Normalized() * 10 + new Vector3(0, 3, 0);
-                }
+                    if (Vector3.Up.Dot(collision.GetNormal()) > 0.1f)
+                    {
+                        // _ref = mob;
+                        BroadcastAction(EventType.HIT, mob);
+                        // GD.Print("squash");
+                    }
+                    else // always activated by Enemy
+                    {
+                        OnPlayerHurt(mob);
+                    }
 
-                break;
+                    break;
+                }
             }
         }
     }
+
 }
